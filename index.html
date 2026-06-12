@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baturaja School Map</title>
+    <title>EduMap Baturaja - Pemetaan Sekolah OKU</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +13,8 @@
 <body>
 
     <div id="sidebar">
+        <div class="drag-handle"></div>
+        
         <div class="brand">
             <h1>EduMap Baturaja</h1>
             <p>Sistem Pemetaan Fasilitas Pendidikan Kota Baturaja</p>
@@ -47,18 +49,18 @@
         const pusatBaturaja = [-4.1303, 104.1675];
         const map = L.map('map', { zoomControl: false }).setView(pusatBaturaja, 14);
         
-        // Pindahkan tombol zoom ke kanan bawah agar estetik
+        // Pindahkan kontrol zoom ke kanan bawah agar estetik di laptop/hp
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Menggunakan tile map CartoDB Positron (Tampilan peta bersih/light elegan)
+        // Map Base Layer: CartoDB Positron (Bersih, abu-abu terang, minimalis)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; CartoDB'
         }).addTo(map);
 
-        // Group untuk menampung marker agar mudah dihapus/difilter
+        // Group khusus penampung marker layer
         let markerGroup = L.layerGroup().addTo(map);
 
-        // Fungsi menampilkan info detail di sidebar saat marker diklik
+        // Render data deskripsi ke sidebar
         function renderDetail(sekolah) {
             const panel = document.getElementById('content-panel');
             panel.innerHTML = `
@@ -86,9 +88,14 @@
                     <button class="btn-back" onclick="resetAwal()">Kembali ke Beranda</button>
                 </div>
             `;
+            
+            // Otomatis tarik sheet ke atas di HP pas user klik marker biar infonya kebaca
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').style.transform = 'translateY(0px)';
+            }
         }
 
-        // Fungsi mereset tampilan sidebar
+        // Reset aplikasi ke kondisi awal
         function resetAwal() {
             document.getElementById('content-panel').innerHTML = `
                 <div class="welcome-text">
@@ -100,15 +107,19 @@
             map.setView(pusatBaturaja, 14);
             document.getElementById('filterJenjang').value = "SEMUA";
             tampilkanSemuaMarker(dataSekolah);
+            
+            // Balikin panel setengah tenggelam lagi di HP
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').style.transform = 'translateY(50vh)';
+            }
         }
 
-        // Fungsi merender marker berdasarkan data yang disuplai
+        // Fungsi penyebar marker pin
         function tampilkanSemuaMarker(listSekolah) {
-            markerGroup.clearLayers(); // Bersihkan peta dulu
+            markerGroup.clearLayers(); 
             
             listSekolah.forEach(sekolah => {
                 const marker = L.marker(sekolah.koordinat);
-                
                 marker.bindTooltip(sekolah.nama, { direction: 'top', offset: [0, -10] });
                 
                 marker.on('click', () => {
@@ -120,7 +131,7 @@
             });
         }
 
-        // LOGIKA FILTER (Alur koding teratur tanpa database)
+        // Logika fungsi filter data client-side array
         function filterPeta() {
             const pilihan = document.getElementById('filterJenjang').value;
             
@@ -128,19 +139,71 @@
                 tampilkanSemuaMarker(dataSekolah);
                 map.setView(pusatBaturaja, 14);
             } else {
-                // Filter array dataSekolah berdasarkan jenjang yang dipilih
                 const hasilFilter = dataSekolah.filter(s => s.jenjang === pilihan);
                 tampilkanSemuaMarker(hasilFilter);
                 
-                // Jika ada data hasil filter, arahkan peta ke sekolah pertama
                 if(hasilFilter.length > 0) {
                     map.setView(hasilFilter[0].koordinat, 14);
                 }
             }
         }
 
-        // Eksekusi pertama kali saat web dibuka
+        // Inisialisasi awal penayangan data
         tampilkanSemuaMarker(dataSekolah);
+
+        // ==========================================================================
+        // LOGIKA DRAG BOTTOM SHEET UNTUK SENSOR HP
+        // ==========================================================================
+        const sidebar = document.getElementById('sidebar');
+        let startY = 0;
+        let isDragging = false;
+
+        if (window.innerWidth <= 768) {
+            sidebar.addEventListener('touchstart', (e) => {
+                // Jangan drag sheet kalau user lagi nge-scroll box detail kontent di dalam
+                if (e.target.closest('.content-panel') && sidebar.style.transform === 'translateY(0px)' && sidebar.querySelector('.content-panel').scrollTop > 0) {
+                    return; 
+                }
+                startY = e.touches[0].clientY;
+                isDragging = true;
+                sidebar.style.transition = 'none';
+            });
+
+            sidebar.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                
+                let currentY = e.touches[0].clientY;
+                let deltaY = currentY - startY;
+                let basePos = (sidebar.style.transform === 'translateY(0px)' || sidebar.style.transform === '') ? 0 : window.innerHeight * 0.5;
+                let newTranslateY = basePos + deltaY;
+                
+                if (newTranslateY >= 0 && newTranslateY <= window.innerHeight * 0.5) {
+                    sidebar.style.transform = `translateY(${newTranslateY}px)`;
+                }
+            });
+
+            sidebar.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                sidebar.style.transition = 'transform 0.3s ease-out';
+                
+                let finalY = e.changedTouches[0].clientY;
+                let distanceDragged = finalY - startY;
+                
+                if (distanceDragged < -40) {
+                    sidebar.style.transform = 'translateY(0px)'; // Menutup full ke atas
+                } else if (distanceDragged > 40) {
+                    sidebar.style.transform = 'translateY(50vh)'; // Kembali turun setengah layar
+                } else {
+                    // Mental balik jika tarikan tanggung
+                    if (startY > window.innerHeight * 0.5) {
+                        sidebar.style.transform = 'translateY(50vh)';
+                    } else {
+                        sidebar.style.transform = 'translateY(0px)';
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
