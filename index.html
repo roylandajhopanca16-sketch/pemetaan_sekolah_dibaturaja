@@ -53,17 +53,22 @@
     <script src="data.js"></script>
 
     <script>
+        // Set pandangan awal peta ke Pusat Kota Baturaja (Taman Kota)
         const pusatBaturaja = [-4.1303, 104.1675];
         const map = L.map('map', { zoomControl: false }).setView(pusatBaturaja, 14);
 
+        // Pindahkan kontrol zoom ke kanan bawah agar estetik
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+        // Map Base Layer: CartoDB Positron
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; CartoDB'
         }).addTo(map);
 
+        // Group khusus penampung marker layer
         let markerGroup = L.layerGroup().addTo(map);
 
+        // Buat ikon pin kustom berwarna sesuai jenjang
         function buatIkonSekolah(jenjang) {
             return L.divIcon({
                 className: 'school-pin-wrapper',
@@ -74,10 +79,10 @@
             });
         }
 
+        // Render ringkasan jumlah sekolah per jenjang di panel beranda
         function renderStats() {
             const jenjangList = ["SMP", "SMA", "SMK"];
             const container = document.getElementById('welcome-stats');
-            if(!container) return;
             container.innerHTML = jenjangList.map(j => {
                 const jumlah = dataSekolah.filter(s => s.jenjang === j).length;
                 return `
@@ -89,6 +94,7 @@
             }).join('');
         }
 
+        // Render data deskripsi ke sidebar
         function renderDetail(sekolah) {
             const panel = document.getElementById('content-panel');
             const totalIndex = dataSekolah.length.toString().padStart(2, '0');
@@ -128,15 +134,16 @@
                 </div>
             `;
 
+            // Otomatis naikkan sheet ke atas saat marker diklik di HP agar info terbaca
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').style.transform = 'translateY(0px)';
-                currentTranslateY = 0; 
             }
         }
 
+        // Reset aplikasi ke kondisi awal
         function resetAwal() {
             document.getElementById('content-panel').innerHTML = `
-                <div class="welcome-text" id="welcome-text-template">
+                <div class="welcome-text">
                     <p class="lead">Kenapa <em>atlas</em> ini diperlukan?</p>
                     <p>Web ini dirancang untuk mengatasi kesulitan wali murid di Baturaja dalam melacak lokasi sekolah, detail akreditasi, dan fasilitas penunjang guna menyukseskan program PPDB Zonasi.</p>
                     <div class="welcome-stats" id="welcome-stats"></div>
@@ -148,12 +155,13 @@
             document.getElementById('filterJenjang').value = "SEMUA";
             tampilkanSemuaMarker(dataSekolah);
 
+            // Kembalikan panel setengah tenggelam lagi di HP
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').style.transform = 'translateY(50vh)';
-                currentTranslateY = window.innerHeight * 0.5;
             }
         }
 
+        // Fungsi penyebar marker pin
         function tampilkanSemuaMarker(listSekolah) {
             markerGroup.clearLayers();
 
@@ -170,6 +178,7 @@
             });
         }
 
+        // Logika fungsi filter data client-side array
         function filterPeta() {
             const pilihan = document.getElementById('filterJenjang').value;
 
@@ -186,62 +195,77 @@
             }
         }
 
+        // Inisialisasi awal penayangan data
         renderStats();
         tampilkanSemuaMarker(dataSekolah);
 
         // ==========================================================================
-        // DRAG ENGINE MUTAKHIR (Kalkulasi Global Tanpa Crash)
+        // DRAG ENGINE (Sentuhan Jari) - FIX ANTI-LAG & REBASH STATE
         // ==========================================================================
         const sidebar = document.getElementById('sidebar');
         let startY = 0;
         let isDragging = false;
-        let currentTranslateY = window.innerHeight * 0.5; 
 
         if (window.innerWidth <= 768) {
+            // Pasang base position awal agar terbaca oleh JavaScript
             sidebar.style.transform = 'translateY(50vh)';
 
+            // Event saat jempol menyentuh area sidebar
             sidebar.addEventListener('touchstart', (e) => {
                 const contentPanel = document.getElementById('content-panel');
+
+                // Jika user sedang men-scroll teks detail di dalam, batasi drag halaman agar tidak bentrok
                 if (e.target.closest('#content-panel') && contentPanel.scrollTop > 0) {
                     return;
                 }
 
                 startY = e.touches[0].clientY;
                 isDragging = true;
-                sidebar.style.transition = 'none';
+                sidebar.style.transition = 'none'; // Matikan animasi elastis saat ditarik jempol
             }, { passive: true });
 
+            // Event saat jempol bergerak menyeret halaman
             sidebar.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
 
                 let currentY = e.touches[0].clientY;
                 let deltaY = currentY - startY;
-                let newTranslateY = currentTranslateY + deltaY;
 
+                let currentTransform = sidebar.style.transform;
+                let basePos = currentTransform.includes('50vh') ? window.innerHeight * 0.5 : 0;
+                let newTranslateY = basePos + deltaY;
+
+                // Kunci pergerakan panel agar tetap berada di antara batas atas (0) dan batas bawah (50vh)
                 if (newTranslateY >= 0 && newTranslateY <= window.innerHeight * 0.5) {
                     sidebar.style.transform = `translateY(${newTranslateY}px)`;
-                    map.dragging.disable(); 
+                    map.dragging.disable(); // Matikan navigasi peta sementara agar tidak ikut bergeser
                 }
             }, { passive: true });
 
+            // Event saat jempol dilepas
             sidebar.addEventListener('touchend', (e) => {
                 if (!isDragging) return;
                 isDragging = false;
 
+                // Aktifkan kembali transisi pegas bezier premium CSS
                 sidebar.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
-                map.dragging.enable();
+                map.dragging.enable(); // Hidupkan kembali navigasi peta
 
                 let finalY = e.changedTouches[0].clientY;
                 let distanceDragged = finalY - startY;
 
+                // Toleransi seret diperkecil ke 30px agar terasa sangat responsif dan ringan ditarik
                 if (distanceDragged < -30) {
-                    sidebar.style.transform = 'translateY(0px)';
-                    currentTranslateY = 0;
+                    sidebar.style.transform = 'translateY(0px)'; // Panel meluncur ke atas penuh
                 } else if (distanceDragged > 30) {
-                    sidebar.style.transform = 'translateY(50vh)';
-                    currentTranslateY = window.innerHeight * 0.5;
+                    sidebar.style.transform = 'translateY(50vh)'; // Panel meluncur turun setengah layar
                 } else {
-                    sidebar.style.transform = `translateY(${currentTranslateY}px)`;
+                    // Jika tarikan nanggung/ragu-ragu, kembalikan ke posisi awal sebelum ditarik
+                    if (basePos === 0) {
+                        sidebar.style.transform = 'translateY(0px)';
+                    } else {
+                        sidebar.style.transform = 'translateY(50vh)';
+                    }
                 }
             });
         }
