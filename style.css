@@ -19,9 +19,12 @@ body {
     height: 100vh;
     color: var(--text-main);
     background-color: #f8fafc;
+    overflow: hidden;
 }
 
-/* Sidebar Styling */
+/* ==========================================================================
+   DESAIN DEKSTOP / LAPTOP (Default)
+   ========================================================================== */
 #sidebar {
     width: 380px;
     background: var(--bg-sidebar);
@@ -29,6 +32,10 @@ body {
     flex-direction: column;
     box-shadow: 4px 0 25px rgba(0,0,0,0.08);
     z-index: 1000;
+}
+
+.drag-handle { 
+    display: none; /* Hanya muncul di HP */
 }
 
 .brand {
@@ -49,7 +56,6 @@ body {
     margin-top: 4px;
 }
 
-/* Filter Box */
 .filter-container {
     padding: 16px 24px;
     background: #f1f5f9;
@@ -75,7 +81,6 @@ body {
     outline: none;
 }
 
-/* Content Area */
 .content-panel {
     padding: 24px;
     overflow-y: auto;
@@ -88,7 +93,6 @@ body {
     color: var(--text-light);
 }
 
-/* Detail Card */
 .detail-card {
     animation: fadeIn 0.3s ease-in-out;
 }
@@ -137,11 +141,8 @@ body {
     transition: background 0.2s;
 }
 
-.btn-back:hover {
-    background: #e2e8f0;
-}
+.btn-back:hover { background: #e2e8f0; }
 
-/* Map */
 #map {
     flex-grow: 1;
     height: 100%;
@@ -151,78 +152,61 @@ body {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
 /* ==========================================================================
-   PERBAIKAN LAYOUT UNTUK HP / MOBILE (RESPONSIVE TWEAK)
+   DESAIN LAYOUT HP / TABLET (Bottom Sheet Mode)
    ========================================================================== */
 @media (max-width: 768px) {
     body { 
-        flex-direction: column-reverse; /* Sidebar pindah ke bawah, peta di atas */
-    }
-    
-    /* Alokasikan porsi layar seimbang (50% peta, 50% informasi) */
-    #sidebar { 
-        width: 100%; 
-        height: 50vh; 
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.15); /* Bayangan pindah ke atas */
+        flex-direction: column-reverse; 
     }
     
     #map { 
-        height: 50vh; 
+        height: 100vh;
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+    }
+    
+    #sidebar { 
+        width: 100%; 
+        height: 85vh; 
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        z-index: 1000;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
+        transform: translateY(50vh); /* Default awal: nongol setengah layar bawah */
+        transition: transform 0.3s ease-out;
     }
 
-    /* Perkecil padding header di HP agar hemat ruang */
-    .brand {
-        padding: 14px 20px;
+    .drag-handle {
+        display: block;
+        width: 40px;
+        height: 5px;
+        background-color: #cbd5e1;
+        border-radius: 10px;
+        margin: 10px auto 5px auto;
     }
 
-    .brand h1 {
-        font-size: 1.1rem;
-    }
+    .brand { padding: 10px 20px; }
+    .brand h1 { font-size: 1.1rem; }
+    .brand p { font-size: 0.75rem; }
+    .filter-container { padding: 10px 20px; }
+    .filter-select { padding: 8px; font-size: 0.85rem; }
 
-    .brand p {
-        font-size: 0.75rem;
-    }
-
-    /* Perkecil padding kontainer filter */
-    .filter-container {
-        padding: 10px 20px;
-    }
-
-    .filter-select {
-        padding: 8px;
-        font-size: 0.85rem;
-    }
-
-    /* Area konten deskripsi dibikin lega & scrollable dengan lancar */
     .content-panel {
-        padding: 16px 20px;
-        overflow-y: scroll; /* Memastikan bisa di-scroll */
-        -webkit-overflow-scrolling: touch; /* Scroll halus di iOS/Android */
+        padding: 15px 20px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .welcome-text {
-        font-size: 0.85rem; /* Ukuran font disesuaikan untuk layar HP */
-        line-height: 1.5;
-    }
-
-    /* Optimasi ukuran kartu detail sekolah di HP */
-    .detail-card h2 {
-        font-size: 1.1rem;
-        margin-bottom: 10px;
-    }
-
-    .info-group {
-        margin-bottom: 10px;
-        font-size: 0.85rem;
-    }
-
-    .info-group strong {
-        font-size: 0.75rem;
-    }
-
-    .btn-back {
-        padding: 10px;
-        font-size: 0.85rem;
-        margin-top: 15px;
-    }
+    .welcome-text { font-size: 0.85rem; line-height: 1.5; }
+    .detail-card h2 { font-size: 1.1rem; margin-bottom: 10px; }
+    .info-group { margin-bottom: 10px; font-size: 0.85rem; }
+    .info-group strong { font-size: 0.75rem; }
+    .btn-back { padding: 10px; font-size: 0.85rem; margin-top: 15px; }
 }
