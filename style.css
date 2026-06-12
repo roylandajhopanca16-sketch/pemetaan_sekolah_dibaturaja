@@ -1,17 +1,20 @@
 /* ==========================================================================
    EDUMAP BATURAJA — "ATLAS LAPANGAN" DESIGN SYSTEM
+   Konsep: nuansa peta survei / arsip lapangan kota kecil — kertas hangat,
+   tinta gelap, dan warna jenjang sebagai sistem penanda kartografis.
    ========================================================================== */
 :root {
-    --paper: #FBF7EF;          
-    --paper-card: #FFFFFF;     
-    --ink: #21262B;            
-    --ink-soft: #6B7178;       
-    --line: #E6DFD1;           
+    --paper: #FBF7EF;          /* Kertas hangat (latar utama) */
+    --paper-card: #FFFFFF;     /* Kartu / panel */
+    --ink: #21262B;            /* Tinta — teks utama */
+    --ink-soft: #6B7178;       /* Tinta pudar — teks sekunder */
+    --line: #E6DFD1;           /* Garis kertas / pembatas */
     --line-strong: #D8CFBC;
 
-    --smp: #C99A2E;            
-    --sma: #1B4B43;            
-    --smk: #C1622D;            
+    /* Warna jenjang — dipakai konsisten di marker, badge, legenda */
+    --smp: #C99A2E;            /* Ochre */
+    --sma: #1B4B43;            /* Teal tua */
+    --smk: #C1622D;            /* Terakota */
 
     --smp-bg: #FBF1DA;
     --sma-bg: #E1EAE7;
@@ -23,6 +26,9 @@
     --shadow-lg: 0 14px 36px rgba(33, 38, 43, 0.10);
 }
 
+/* ==========================================================================
+   GLOBAL RESET
+   ========================================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -71,6 +77,7 @@ body {
     display: none;
 }
 
+/* ---- Brand header: kop arsip / kepala peta ---- */
 .brand {
     padding: 30px 28px 22px 28px;
     background: var(--ink);
@@ -105,6 +112,7 @@ body {
     max-width: 320px;
 }
 
+/* ---- Legenda jenjang: elemen signature ---- */
 .legend {
     display: flex;
     gap: 10px;
@@ -136,6 +144,7 @@ body {
 .legend-item[data-jenjang="SMA"] .legend-dot { background: var(--sma); }
 .legend-item[data-jenjang="SMK"] .legend-dot { background: var(--smk); }
 
+/* ---- Filter ---- */
 .filter-container {
     padding: 18px 28px;
     background: var(--paper-card);
@@ -177,6 +186,7 @@ body {
     box-shadow: 0 0 0 4px rgba(27, 75, 67, 0.10);
 }
 
+/* ---- Content panel ---- */
 .content-panel {
     padding: 26px 28px 28px 28px;
     overflow-y: auto;
@@ -255,7 +265,7 @@ body {
 .stat-card[data-jenjang="SMK"] .num { color: var(--smk); }
 
 /* ==========================================================================
-   DETAIL CARD
+   DETAIL CARD — kartu arsip sekolah
    ========================================================================== */
 .detail-card {
     animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -354,6 +364,7 @@ body {
     letter-spacing: 0.3px;
 }
 
+/* Tombol kembali */
 .btn-back {
     width: 100%;
     padding: 14px;
@@ -386,6 +397,7 @@ body {
     background: var(--paper);
 }
 
+/* ---- Marker kustom berwarna per jenjang ---- */
 .school-pin {
     width: 26px;
     height: 26px;
@@ -427,6 +439,7 @@ body {
     font-family: 'Inter', sans-serif;
 }
 
+/* Animasi */
 @keyframes slideUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -475,28 +488,20 @@ body {
         flex-shrink: 0;
     }
 
-    /* Modifikasi penyesuaian teks brand di HP agar bersih */
     .brand {
-        padding: 16px 22px 14px 22px;
-        background: transparent;
-        color: var(--ink);
+        padding: 12px 22px 14px 22px;
         border-bottom: none;
     }
 
-    .brand .eyebrow { 
-        margin-bottom: 4px; 
-        color: var(--ink-soft);
-    }
+    .brand .eyebrow { margin-bottom: 6px; }
 
     .brand h1 {
-        font-size: 1.3rem;
-        color: var(--ink);
+        font-size: 1.25rem;
     }
 
     .brand p {
         font-size: 0.78rem;
         margin-top: 4px;
-        color: var(--ink-soft);
     }
 
     .legend {
@@ -504,7 +509,6 @@ body {
         overflow-x: auto;
         white-space: nowrap;
         flex-wrap: nowrap;
-        background: transparent;
     }
 
     .filter-container {
