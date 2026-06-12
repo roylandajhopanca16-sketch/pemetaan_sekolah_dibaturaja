@@ -2,24 +2,33 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baturaja School Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EduMap Baturaja - Pemetaan Sekolah OKU</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="sidebar">
+        <div class="drag-handle" id="dragHandle"></div>
+
         <div class="brand">
+            <span class="eyebrow">Atlas Pendidikan · Kab. OKU</span>
             <h1>EduMap Baturaja</h1>
-            <p>Sistem Pemetaan Fasilitas Pendidikan Kota Baturaja</p>
+            <p>Sistem pemetaan fasilitas pendidikan untuk membantu wali murid menyusuri sekolah, akreditasi, dan zonasi PPDB di Kota Baturaja.</p>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item" data-jenjang="SMP"><span class="legend-dot"></span>SMP</div>
+            <div class="legend-item" data-jenjang="SMA"><span class="legend-dot"></span>SMA</div>
+            <div class="legend-item" data-jenjang="SMK"><span class="legend-dot"></span>SMK</div>
         </div>
 
         <div class="filter-container">
-            <label for="filterJenjang">PILIH JENJANG SEKOLAH</label>
+            <label for="filterJenjang">Pilih Jenjang Sekolah</label>
             <select id="filterJenjang" class="filter-select" onchange="filterPeta()">
                 <option value="SEMUA">Semua Jenjang</option>
                 <option value="SMP">SMP</option>
@@ -29,10 +38,11 @@
         </div>
 
         <div class="content-panel" id="content-panel">
-            <div class="welcome-text">
-                <p style="margin-bottom: 12px; font-weight: 600; color: var(--primary);">Kenapa Web Ini Diperlukan?</p>
-                <p style="margin-bottom: 16px;">Web ini dirancang untuk mengatasi kesulitan wali murid di Baturaja dalam melacak lokasi sekolah, detail akreditasi, dan fasilitas penunjang guna menyukseskan program PPDB Zonasi.</p>
-                <p style="border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic;">Silakan klik salah satu marker pin di peta untuk melihat profil lengkap sekolah.</p>
+            <div class="welcome-text" id="welcome-text-template">
+                <p class="lead">Kenapa <em>atlas</em> ini diperlukan?</p>
+                <p>Web ini dirancang untuk mengatasi kesulitan wali murid di Baturaja dalam melacak lokasi sekolah, detail akreditasi, dan fasilitas penunjang guna menyukseskan program PPDB Zonasi.</p>
+                <div class="welcome-stats" id="welcome-stats"></div>
+                <p class="welcome-note">Klik salah satu marker pada peta untuk membuka profil lengkap sekolah.</p>
             </div>
         </div>
     </div>
@@ -46,26 +56,59 @@
         // Set pandangan awal peta ke Pusat Kota Baturaja (Taman Kota)
         const pusatBaturaja = [-4.1303, 104.1675];
         const map = L.map('map', { zoomControl: false }).setView(pusatBaturaja, 14);
-        
-        // Pindahkan tombol zoom ke kanan bawah agar estetik
+
+        // Pindahkan kontrol zoom ke kanan bawah agar estetik
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Menggunakan tile map CartoDB Positron (Tampilan peta bersih/light elegan)
+        // Map Base Layer: CartoDB Positron
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; CartoDB'
         }).addTo(map);
 
-        // Group untuk menampung marker agar mudah dihapus/difilter
+        // Group khusus penampung marker layer
         let markerGroup = L.layerGroup().addTo(map);
 
-        // Fungsi menampilkan info detail di sidebar saat marker diklik
+        // Buat ikon pin kustom berwarna sesuai jenjang
+        function buatIkonSekolah(jenjang) {
+            return L.divIcon({
+                className: 'school-pin-wrapper',
+                html: `<div class="school-pin ${jenjang}"><span>${jenjang.charAt(0)}</span></div>`,
+                iconSize: [26, 26],
+                iconAnchor: [13, 26],
+                tooltipAnchor: [0, -28]
+            });
+        }
+
+        // Render ringkasan jumlah sekolah per jenjang di panel beranda
+        function renderStats() {
+            const jenjangList = ["SMP", "SMA", "SMK"];
+            const container = document.getElementById('welcome-stats');
+            container.innerHTML = jenjangList.map(j => {
+                const jumlah = dataSekolah.filter(s => s.jenjang === j).length;
+                return `
+                    <div class="stat-card" data-jenjang="${j}">
+                        <div class="num">${jumlah}</div>
+                        <span class="label">${j}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render data deskripsi ke sidebar
         function renderDetail(sekolah) {
             const panel = document.getElementById('content-panel');
+            const totalIndex = dataSekolah.length.toString().padStart(2, '0');
+            const noUrut = sekolah.id.toString().padStart(2, '0');
+            const koordinatText = `${sekolah.koordinat[0].toFixed(6)}, ${sekolah.koordinat[1].toFixed(6)}`;
+
             panel.innerHTML = `
                 <div class="detail-card">
-                    <span class="badge">${sekolah.status} • ${sekolah.jenjang}</span>
+                    <div class="detail-header">
+                        <span class="badge" data-jenjang="${sekolah.jenjang}"><span class="dot"></span>${sekolah.status} · ${sekolah.jenjang}</span>
+                        <span class="catalog-no">Arsip No. ${noUrut}/${totalIndex}</span>
+                    </div>
                     <h2>${sekolah.nama}</h2>
-                    
+
                     <div class="info-group">
                         <strong>Akreditasi</strong>
                         <p>Peringkat ${sekolah.akreditasi}</p>
@@ -73,6 +116,10 @@
                     <div class="info-group">
                         <strong>Alamat Lengkap</strong>
                         <p>${sekolah.alamat}</p>
+                    </div>
+                    <div class="info-group coord">
+                        <strong>Titik Koordinat</strong>
+                        <p>${koordinatText}</p>
                     </div>
                     <div class="info-group">
                         <strong>Fasilitas Unggulan</strong>
@@ -86,61 +133,142 @@
                     <button class="btn-back" onclick="resetAwal()">Kembali ke Beranda</button>
                 </div>
             `;
+
+            // Otomatis naikkan sheet ke atas saat marker diklik di HP agar info terbaca
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').style.transform = 'translateY(0px)';
+            }
         }
 
-        // Fungsi mereset tampilan sidebar
+        // Reset aplikasi ke kondisi awal
         function resetAwal() {
             document.getElementById('content-panel').innerHTML = `
                 <div class="welcome-text">
-                    <p style="margin-bottom: 12px; font-weight: 600; color: var(--primary);">Kenapa Web Ini Diperlukan?</p>
-                    <p style="margin-bottom: 16px;">Web ini dirancang untuk mengatasi kesulitan wali murid di Baturaja dalam melacak lokasi sekolah, detail akreditasi, dan fasilitas penunjang guna menyukseskan program PPDB Zonasi.</p>
-                    <p style="border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic;">Silakan klik salah satu marker pin di peta untuk melihat profil lengkap sekolah.</p>
+                    <p class="lead">Kenapa <em>atlas</em> ini diperlukan?</p>
+                    <p>Web ini dirancang untuk mengatasi kesulitan wali murid di Baturaja dalam melacak lokasi sekolah, detail akreditasi, dan fasilitas penunjang guna menyukseskan program PPDB Zonasi.</p>
+                    <div class="welcome-stats" id="welcome-stats"></div>
+                    <p class="welcome-note">Klik salah satu marker pada peta untuk membuka profil lengkap sekolah.</p>
                 </div>
             `;
+            renderStats();
             map.setView(pusatBaturaja, 14);
             document.getElementById('filterJenjang').value = "SEMUA";
             tampilkanSemuaMarker(dataSekolah);
+
+            // Kembalikan panel setengah tenggelam lagi di HP
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').style.transform = 'translateY(50vh)';
+            }
         }
 
-        // Fungsi merender marker berdasarkan data yang disuplai
+        // Fungsi penyebar marker pin
         function tampilkanSemuaMarker(listSekolah) {
-            markerGroup.clearLayers(); // Bersihkan peta dulu
-            
+            markerGroup.clearLayers();
+
             listSekolah.forEach(sekolah => {
-                const marker = L.marker(sekolah.koordinat);
-                
-                marker.bindTooltip(sekolah.nama, { direction: 'top', offset: [0, -10] });
-                
+                const marker = L.marker(sekolah.koordinat, { icon: buatIkonSekolah(sekolah.jenjang) });
+                marker.bindTooltip(sekolah.nama, { direction: 'top', offset: [0, -8], className: 'school-tooltip' });
+
                 marker.on('click', () => {
                     renderDetail(sekolah);
                     map.setView(sekolah.koordinat, 16);
                 });
-                
+
                 markerGroup.addLayer(marker);
             });
         }
 
-        // LOGIKA FILTER (Alur koding teratur tanpa database)
+        // Logika fungsi filter data client-side array
         function filterPeta() {
             const pilihan = document.getElementById('filterJenjang').value;
-            
+
             if (pilihan === "SEMUA") {
                 tampilkanSemuaMarker(dataSekolah);
                 map.setView(pusatBaturaja, 14);
             } else {
-                // Filter array dataSekolah berdasarkan jenjang yang dipilih
                 const hasilFilter = dataSekolah.filter(s => s.jenjang === pilihan);
                 tampilkanSemuaMarker(hasilFilter);
-                
-                // Jika ada data hasil filter, arahkan peta ke sekolah pertama
+
                 if(hasilFilter.length > 0) {
                     map.setView(hasilFilter[0].koordinat, 14);
                 }
             }
         }
 
-        // Eksekusi pertama kali saat web dibuka
+        // Inisialisasi awal penayangan data
+        renderStats();
         tampilkanSemuaMarker(dataSekolah);
+
+        // ==========================================================================
+        // DRAG ENGINE (Sentuhan Jari) - FIX ANTI-LAG & REBASH STATE
+        // ==========================================================================
+        const sidebar = document.getElementById('sidebar');
+        let startY = 0;
+        let isDragging = false;
+
+        if (window.innerWidth <= 768) {
+            // Pasang base position awal agar terbaca oleh JavaScript
+            sidebar.style.transform = 'translateY(50vh)';
+
+            // Event saat jempol menyentuh area sidebar
+            sidebar.addEventListener('touchstart', (e) => {
+                const contentPanel = document.getElementById('content-panel');
+
+                // Jika user sedang men-scroll teks detail di dalam, batasi drag halaman agar tidak bentrok
+                if (e.target.closest('#content-panel') && contentPanel.scrollTop > 0) {
+                    return;
+                }
+
+                startY = e.touches[0].clientY;
+                isDragging = true;
+                sidebar.style.transition = 'none'; // Matikan animasi elastis saat ditarik jempol
+            }, { passive: true });
+
+            // Event saat jempol bergerak menyeret halaman
+            sidebar.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+
+                let currentY = e.touches[0].clientY;
+                let deltaY = currentY - startY;
+
+                let currentTransform = sidebar.style.transform;
+                let basePos = currentTransform.includes('50vh') ? window.innerHeight * 0.5 : 0;
+                let newTranslateY = basePos + deltaY;
+
+                // Kunci pergerakan panel agar tetap berada di antara batas atas (0) dan batas bawah (50vh)
+                if (newTranslateY >= 0 && newTranslateY <= window.innerHeight * 0.5) {
+                    sidebar.style.transform = `translateY(${newTranslateY}px)`;
+                    map.dragging.disable(); // Matikan navigasi peta sementara agar tidak ikut bergeser
+                }
+            }, { passive: true });
+
+            // Event saat jempol dilepas
+            sidebar.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+
+                // Aktifkan kembali transisi pegas bezier premium CSS
+                sidebar.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                map.dragging.enable(); // Hidupkan kembali navigasi peta
+
+                let finalY = e.changedTouches[0].clientY;
+                let distanceDragged = finalY - startY;
+
+                // Toleransi seret diperkecil ke 30px agar terasa sangat responsif dan ringan ditarik
+                if (distanceDragged < -30) {
+                    sidebar.style.transform = 'translateY(0px)'; // Panel meluncur ke atas penuh
+                } else if (distanceDragged > 30) {
+                    sidebar.style.transform = 'translateY(50vh)'; // Panel meluncur turun setengah layar
+                } else {
+                    // Jika tarikan nanggung/ragu-ragu, kembalikan ke posisi awal sebelum ditarik
+                    if (basePos === 0) {
+                        sidebar.style.transform = 'translateY(0px)';
+                    } else {
+                        sidebar.style.transform = 'translateY(50vh)';
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
