@@ -152,9 +152,78 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive */
+/* ==========================================================================
+   PERBAIKAN LAYOUT UNTUK HP / MOBILE (RESPONSIVE TWEAK)
+   ========================================================================== */
 @media (max-width: 768px) {
-    body { flex-direction: column-reverse; }
-    #sidebar { width: 100%; height: 45vh; }
-    #map { height: 55vh; }
+    body { 
+        flex-direction: column-reverse; /* Sidebar pindah ke bawah, peta di atas */
+    }
+    
+    /* Alokasikan porsi layar seimbang (50% peta, 50% informasi) */
+    #sidebar { 
+        width: 100%; 
+        height: 50vh; 
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15); /* Bayangan pindah ke atas */
+    }
+    
+    #map { 
+        height: 50vh; 
+    }
+
+    /* Perkecil padding header di HP agar hemat ruang */
+    .brand {
+        padding: 14px 20px;
+    }
+
+    .brand h1 {
+        font-size: 1.1rem;
+    }
+
+    .brand p {
+        font-size: 0.75rem;
+    }
+
+    /* Perkecil padding kontainer filter */
+    .filter-container {
+        padding: 10px 20px;
+    }
+
+    .filter-select {
+        padding: 8px;
+        font-size: 0.85rem;
+    }
+
+    /* Area konten deskripsi dibikin lega & scrollable dengan lancar */
+    .content-panel {
+        padding: 16px 20px;
+        overflow-y: scroll; /* Memastikan bisa di-scroll */
+        -webkit-overflow-scrolling: touch; /* Scroll halus di iOS/Android */
+    }
+
+    .welcome-text {
+        font-size: 0.85rem; /* Ukuran font disesuaikan untuk layar HP */
+        line-height: 1.5;
+    }
+
+    /* Optimasi ukuran kartu detail sekolah di HP */
+    .detail-card h2 {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    .info-group {
+        margin-bottom: 10px;
+        font-size: 0.85rem;
+    }
+
+    .info-group strong {
+        font-size: 0.75rem;
+    }
+
+    .btn-back {
+        padding: 10px;
+        font-size: 0.85rem;
+        margin-top: 15px;
+    }
 }
