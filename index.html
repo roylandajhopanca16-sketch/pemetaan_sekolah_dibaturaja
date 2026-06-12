@@ -3,190 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduMap Baturaja - Pemetaan Sekolah OKU</title>
-    <!-- Leaflet CSS untuk Peta -->
+    <title>Baturaja School Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        :root {
-            --primary-color: #1e3a8a; /* Navy */
-            --secondary-color: #0d9488; /* Teal */
-            --bg-light: #f8fafc;
-            --text-dark: #1e293b;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            height: 100vh;
-            color: var(--text-dark);
-        }
-
-        /* Panel Samping */
-        #sidebar {
-            width: 350px;
-            background-color: var(--bg-light);
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-        }
-
-        .header-panel {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .header-panel h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-
-        .header-panel p {
-            margin: 5px 0 0 0;
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-
-        .info-content {
-            padding: 20px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-
-        .school-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-            border-left: 4px solid var(--secondary-color);
-        }
-
-        /* Kontainer Peta */
-        #map {
-            flex-grow: 1;
-            height: 100%;
-        }
-
-        /* Responsif untuk HP */
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column-reverse;
-            }
-            #sidebar {
-                width: 100%;
-                height: 40vh;
-            }
-            #map {
-                height: 60vh;
-            }
-        }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Panel Informasi -->
     <div id="sidebar">
-        <div class="header-panel">
+        <div class="brand">
             <h1>EduMap Baturaja</h1>
-            <p>Sistem Informasi Geografis Pemetaan Sekolah Kota Baturaja</p>
+            <p>Sistem Pemetaan Fasilitas Pendidikan Kota Baturaja</p>
         </div>
-        <div class="info-content" id="info-box">
-            <h3>Selamat Datang</h3>
-            <p>Silakan klik salah satu marker sekolah pada peta untuk melihat detail informasi, akreditasi, dan alamat lengkap.</p>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <div style="font-size: 0.85rem; color: #64748b;">
-                <strong>Kenapa Web Ini Penting?</strong>
-                <ul>
-                    <li>Mempermudah jalur Zonasi PPDB warga Baturaja.</li>
-                    <li>Transparansi data fasilitas pendidikan di OKU.</li>
-                </ul>
+
+        <div class="filter-container">
+            <label for="filterJenjang">PILIH JENJANG SEKOLAH</label>
+            <select id="filterJenjang" class="filter-select" onchange="filterPeta()">
+                <option value="SEMUA">Semua Jenjang</option>
+                <option value="SMP">SMP</option>
+                <option value="SMA">SMA</option>
+                <option value="SMK">SMK</option>
+            </select>
+        </div>
+
+        <div class="content-panel" id="content-panel">
+            <div class="welcome-text">
+                <p style="margin-bottom: 12px; font-weight: 600; color: var(--primary);">Kenapa Web Ini Diperlukan?</p>
+                <p style="margin-bottom: 16px;">Web ini dirancang untuk mengatasi kesulitan wali murid di Baturaja dalam melacak lokasi sekolah, detail akreditasi, dan fasilitas penunjang guna menyukseskan program PPDB Zonasi.</p>
+                <p style="border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic;">Silakan klik salah satu marker pin di peta untuk melihat profil lengkap sekolah.</p>
             </div>
         </div>
     </div>
 
-    <!-- Peta -->
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Koordinat tengah Kota Baturaja (sekitar Taman Kota Baturaja)
-        const baturajaKoordinat = [-4.1303, 104.1675]; 
-        
-        // Inisialisasi Peta
-        const map = L.map('map').setView(baturajaKoordinat, 14);
+    <script src="data.js"></script>
 
-        // Map Style (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    <script>
+        // Set pandangan awal peta ke Pusat Kota Baturaja (Taman Kota)
+        const pusatBaturaja = [-4.1303, 104.1675];
+        const map = L.map('map', { zoomControl: false }).setView(pusatBaturaja, 14);
+        
+        // Pindahkan tombol zoom ke kanan bawah agar estetik
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Menggunakan tile map CartoDB Positron (Tampilan peta bersih/light elegan)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CartoDB'
         }).addTo(map);
 
-        // Data Sampel Sekolah di Baturaja (Bisa dikembangkan dengan database)
-        const dataSekolah = [
-            {
-                nama: "SMA Negeri 1 OKU",
-                koordinat: [-4.1251, 104.1610],
-                alamat: "Jl. Pahlawan Kemarung No.67, Baturaja Lama",
-                akreditasi: "A",
-                status: "Negeri"
-            },
-            {
-                nama: "SMA Negeri 2 OKU",
-                koordinat: [-4.1485, 104.1755],
-                alamat: "Jl. Jend. Gatot Subroto, Sukajadi, Baturaja Timur",
-                akreditasi: "A",
-                status: "Negeri"
-            },
-            {
-                nama: "SMP Negeri 1 OKU",
-                koordinat: [-4.1288, 104.1645],
-                alamat: "Jl. Jend. Ahmad Yani, Baturaja",
-                akreditasi: "A",
-                status: "Negeri"
-            }
-        ];
+        // Group untuk menampung marker agar mudah dihapus/difilter
+        let markerGroup = L.layerGroup().addTo(map);
 
-        // Tampilkan Detail Sekolah saat Marker diklik
-        function tampilkanDetail(sekolah) {
-            const infoBox = document.getElementById('info-box');
-            infoBox.innerHTML = `
-                <div class="school-card">
-                    <h2 style="margin-top:0; color:var(--primary-color); font-size:1.3rem;">${sekolah.nama}</h2>
-                    <p><strong>Status:</strong> ${sekolah.status}</p>
-                    <p><strong>Akreditasi:</strong> <span style="background:var(--secondary-color); color:white; padding:2px 8px; border-radius:4px;">${sekolah.akreditasi}</span></p>
-                    <p><strong>Alamat:</strong> ${sekolah.alamat}</p>
+        // Fungsi menampilkan info detail di sidebar saat marker diklik
+        function renderDetail(sekolah) {
+            const panel = document.getElementById('content-panel');
+            panel.innerHTML = `
+                <div class="detail-card">
+                    <span class="badge">${sekolah.status} • ${sekolah.jenjang}</span>
+                    <h2>${sekolah.nama}</h2>
+                    
+                    <div class="info-group">
+                        <strong>Akreditasi</strong>
+                        <p>Peringkat ${sekolah.akreditasi}</p>
+                    </div>
+                    <div class="info-group">
+                        <strong>Alamat Lengkap</strong>
+                        <p>${sekolah.alamat}</p>
+                    </div>
+                    <div class="info-group">
+                        <strong>Fasilitas Unggulan</strong>
+                        <p>${sekolah.fasilitas}</p>
+                    </div>
+                    <div class="info-group">
+                        <strong>Kontak / Telp</strong>
+                        <p>${sekolah.kontak}</p>
+                    </div>
+
+                    <button class="btn-back" onclick="resetAwal()">Kembali ke Beranda</button>
                 </div>
-                <button onclick="resetInfo()" style="background:#e2e8f0; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; width:100%;">Kembali</button>
             `;
         }
 
-        function resetInfo() {
-            document.getElementById('info-box').innerHTML = `
-                <h3>Selamat Datang</h3>
-                <p>Silakan klik salah satu marker sekolah pada peta untuk melihat detail informasi.</p>
+        // Fungsi mereset tampilan sidebar
+        function resetAwal() {
+            document.getElementById('content-panel').innerHTML = `
+                <div class="welcome-text">
+                    <p style="margin-bottom: 12px; font-weight: 600; color: var(--primary);">Kenapa Web Ini Diperlukan?</p>
+                    <p style="margin-bottom: 16px;">Web ini dirancang untuk mengatasi kesulitan wali murid di Baturaja dalam melacak lokasi sekolah, detail akreditasi, dan fasilitas penunjang guna menyukseskan program PPDB Zonasi.</p>
+                    <p style="border-left: 3px solid var(--accent); padding-left: 10px; font-style: italic;">Silakan klik salah satu marker pin di peta untuk melihat profil lengkap sekolah.</p>
+                </div>
             `;
-            map.setView(baturajaKoordinat, 14);
+            map.setView(pusatBaturaja, 14);
+            document.getElementById('filterJenjang').value = "SEMUA";
+            tampilkanSemuaMarker(dataSekolah);
         }
 
-        // Loop untuk memasang marker di peta
-        dataSekolah.forEach(sekolah => {
-            const marker = L.marker(sekolah.koordinat).addTo(map);
+        // Fungsi merender marker berdasarkan data yang disuplai
+        function tampilkanSemuaMarker(listSekolah) {
+            markerGroup.clearLayers(); // Bersihkan peta dulu
             
-            // Pop up singkat saat hover/klik di peta
-            marker.bindPopup(`<b>${sekolah.nama}</b><br>Klik untuk detail`);
-            
-            // Event saat marker diklik
-            marker.on('click', function() {
-                tampilkanDetail(sekolah);
-                map.setView(sekolah.koordinat, 16); // Zoom in ke sekolah yang diklik
+            listSekolah.forEach(sekolah => {
+                const marker = L.marker(sekolah.koordinat);
+                
+                marker.bindTooltip(sekolah.nama, { direction: 'top', offset: [0, -10] });
+                
+                marker.on('click', () => {
+                    renderDetail(sekolah);
+                    map.setView(sekolah.koordinat, 16);
+                });
+                
+                markerGroup.addLayer(marker);
             });
-        });
+        }
+
+        // LOGIKA FILTER (Alur koding teratur tanpa database)
+        function filterPeta() {
+            const pilihan = document.getElementById('filterJenjang').value;
+            
+            if (pilihan === "SEMUA") {
+                tampilkanSemuaMarker(dataSekolah);
+                map.setView(pusatBaturaja, 14);
+            } else {
+                // Filter array dataSekolah berdasarkan jenjang yang dipilih
+                const hasilFilter = dataSekolah.filter(s => s.jenjang === pilihan);
+                tampilkanSemuaMarker(hasilFilter);
+                
+                // Jika ada data hasil filter, arahkan peta ke sekolah pertama
+                if(hasilFilter.length > 0) {
+                    map.setView(hasilFilter[0].koordinat, 14);
+                }
+            }
+        }
+
+        // Eksekusi pertama kali saat web dibuka
+        tampilkanSemuaMarker(dataSekolah);
     </script>
 </body>
 </html>
