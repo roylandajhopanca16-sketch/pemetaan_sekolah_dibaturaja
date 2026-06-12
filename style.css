@@ -1,12 +1,34 @@
+/* ==========================================================================
+   EDUMAP BATURAJA — "ATLAS LAPANGAN" DESIGN SYSTEM
+   Konsep: nuansa peta survei / arsip lapangan kota kecil — kertas hangat,
+   tinta gelap, dan warna jenjang sebagai sistem penanda kartografis.
+   ========================================================================== */
 :root {
-    --primary: #0f172a;       /* Slate Dark */
-    --accent: #059669;        /* Emerald Green */
-    --accent-light: #e6f4ea;
-    --bg-sidebar: #ffffff;
-    --text-main: #334155;
-    --text-light: #64748b;
+    --paper: #FBF7EF;          /* Kertas hangat (latar utama) */
+    --paper-card: #FFFFFF;     /* Kartu / panel */
+    --ink: #21262B;            /* Tinta — teks utama */
+    --ink-soft: #6B7178;       /* Tinta pudar — teks sekunder */
+    --line: #E6DFD1;           /* Garis kertas / pembatas */
+    --line-strong: #D8CFBC;
+
+    /* Warna jenjang — dipakai konsisten di marker, badge, legenda */
+    --smp: #C99A2E;            /* Ochre */
+    --sma: #1B4B43;            /* Teal tua */
+    --smk: #C1622D;            /* Terakota */
+
+    --smp-bg: #FBF1DA;
+    --sma-bg: #E1EAE7;
+    --smk-bg: #FBE8DD;
+
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 2px 10px rgba(33, 38, 43, 0.06);
+    --shadow-lg: 0 14px 36px rgba(33, 38, 43, 0.10);
 }
 
+/* ==========================================================================
+   GLOBAL RESET
+   ========================================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -17,144 +39,516 @@ body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     display: flex;
     height: 100vh;
-    color: var(--text-main);
-    background-color: #f8fafc;
+    color: var(--ink);
+    background-color: var(--paper);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Sidebar Styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #c4b9a4;
+}
+
+/* ==========================================================================
+   SIDEBAR — DESKTOP
+   ========================================================================== */
 #sidebar {
-    width: 380px;
-    background: var(--bg-sidebar);
+    width: 410px;
+    background: var(--paper);
     display: flex;
     flex-direction: column;
-    box-shadow: 4px 0 25px rgba(0,0,0,0.08);
+    box-shadow: 6px 0 30px rgba(33, 38, 43, 0.05);
     z-index: 1000;
+    position: relative;
+    border-right: 1px solid var(--line);
 }
 
+.drag-handle {
+    display: none;
+}
+
+/* ---- Brand header: kop arsip / kepala peta ---- */
 .brand {
-    padding: 24px;
-    background: linear-gradient(135deg, var(--primary), #1e293b);
-    color: white;
+    padding: 30px 28px 22px 28px;
+    background: var(--ink);
+    color: var(--paper);
+    position: relative;
+    border-bottom: 4px solid var(--sma);
+}
+
+.brand .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #9aa3a0;
+    margin-bottom: 10px;
+    display: block;
 }
 
 .brand h1 {
-    font-size: 1.4rem;
-    font-weight: 700;
+    font-family: 'Fraunces', serif;
+    font-size: 1.7rem;
+    font-weight: 600;
     letter-spacing: -0.5px;
+    line-height: 1.15;
 }
 
 .brand p {
-    font-size: 0.8rem;
-    opacity: 0.7;
-    margin-top: 4px;
+    font-size: 0.83rem;
+    color: #c7cdcb;
+    margin-top: 8px;
+    line-height: 1.5;
+    max-width: 320px;
 }
 
-/* Filter Box */
+/* ---- Legenda jenjang: elemen signature ---- */
+.legend {
+    display: flex;
+    gap: 10px;
+    padding: 16px 28px;
+    background: var(--paper-card);
+    border-bottom: 1px solid var(--line);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    letter-spacing: 0.2px;
+}
+
+.legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid var(--paper-card);
+    box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+.legend-item[data-jenjang="SMP"] .legend-dot { background: var(--smp); }
+.legend-item[data-jenjang="SMA"] .legend-dot { background: var(--sma); }
+.legend-item[data-jenjang="SMK"] .legend-dot { background: var(--smk); }
+
+/* ---- Filter ---- */
 .filter-container {
-    padding: 16px 24px;
-    background: #f1f5f9;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 18px 28px;
+    background: var(--paper-card);
+    border-bottom: 1px solid var(--line);
 }
 
 .filter-container label {
-    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text-light);
+    color: var(--ink-soft);
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    letter-spacing: 1.5px;
 }
 
 .filter-select {
     width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #cbd5e1;
-    background: white;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--line-strong);
+    background: var(--paper);
     font-size: 0.9rem;
-    color: var(--text-main);
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
     outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7178' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
 }
 
-/* Content Area */
+.filter-select:focus {
+    border-color: var(--sma);
+    background-color: var(--paper-card);
+    box-shadow: 0 0 0 4px rgba(27, 75, 67, 0.10);
+}
+
+/* ---- Content panel ---- */
 .content-panel {
-    padding: 24px;
+    padding: 26px 28px 28px 28px;
     overflow-y: auto;
     flex-grow: 1;
+    background: var(--paper);
 }
 
 .welcome-text {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: var(--text-light);
+    font-size: 0.93rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
 }
 
-/* Detail Card */
+.welcome-text .lead {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 12px;
+    line-height: 1.35;
+}
+
+.welcome-text .lead em {
+    font-style: italic;
+    color: var(--sma);
+}
+
+.welcome-text p + p {
+    margin-top: 14px;
+}
+
+.welcome-note {
+    margin-top: 20px;
+    border-left: 3px solid var(--sma);
+    padding: 10px 14px;
+    font-style: italic;
+    background: var(--paper-card);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    font-size: 0.85rem;
+}
+
+.welcome-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.stat-card {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 12px 10px;
+    text-align: center;
+}
+
+.stat-card .num {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.stat-card .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    display: block;
+}
+
+.stat-card[data-jenjang="SMP"] .num { color: var(--smp); }
+.stat-card[data-jenjang="SMA"] .num { color: var(--sma); }
+.stat-card[data-jenjang="SMK"] .num { color: var(--smk); }
+
+/* ==========================================================================
+   DETAIL CARD — kartu arsip sekolah
+   ========================================================================== */
 .detail-card {
-    animation: fadeIn 0.3s ease-in-out;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    gap: 12px;
+}
+
+.catalog-no {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    letter-spacing: 1px;
+    white-space: nowrap;
+    padding-top: 4px;
 }
 
 .badge {
-    display: inline-block;
-    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
     border-radius: 50px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    background: var(--accent-light);
-    color: var(--accent);
-    margin-bottom: 12px;
-}
-
-.detail-card h2 {
-    font-size: 1.3rem;
-    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
     margin-bottom: 14px;
 }
 
+.badge .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.badge[data-jenjang="SMP"] { background: var(--smp-bg); color: #7a5a16; }
+.badge[data-jenjang="SMA"] { background: var(--sma-bg); color: var(--sma); }
+.badge[data-jenjang="SMK"] { background: var(--smk-bg); color: #8c4720; }
+
+.badge[data-jenjang="SMP"] .dot { background: var(--smp); }
+.badge[data-jenjang="SMA"] .dot { background: var(--sma); }
+.badge[data-jenjang="SMK"] .dot { background: var(--smk); }
+
+.detail-card h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 18px;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+}
+
 .info-group {
-    margin-bottom: 12px;
-    font-size: 0.9rem;
+    background: var(--paper-card);
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    border: 1px solid var(--line);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.info-group:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--line-strong);
 }
 
 .info-group strong {
-    color: var(--primary);
-    display: block;
-    font-size: 0.8rem;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 2px;
+    letter-spacing: 1.5px;
+    margin-bottom: 5px;
 }
 
+.info-group p {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.55;
+}
+
+.info-group.coord p {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.3px;
+}
+
+/* Tombol kembali */
 .btn-back {
     width: 100%;
-    padding: 12px;
-    background: #f1f5f9;
+    padding: 14px;
+    background: var(--ink);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     font-weight: 600;
-    color: var(--text-main);
-    margin-top: 20px;
-    transition: background 0.2s;
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    color: var(--paper);
+    margin-top: 18px;
+    transition: all 0.2s ease;
 }
 
 .btn-back:hover {
-    background: #e2e8f0;
+    background: var(--sma);
 }
 
-/* Map */
+.btn-back:active {
+    transform: translateY(1px);
+}
+
+/* ==========================================================================
+   MAP
+   ========================================================================== */
 #map {
     flex-grow: 1;
     height: 100%;
+    background: var(--paper);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+/* ---- Marker kustom berwarna per jenjang ---- */
+.school-pin {
+    width: 26px;
+    height: 26px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid var(--paper-card);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.school-pin span {
+    transform: rotate(45deg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--paper-card);
+}
+
+.school-pin.SMP { background: var(--smp); }
+.school-pin.SMA { background: var(--sma); }
+.school-pin.SMK { background: var(--smk); }
+
+.leaflet-tooltip.school-tooltip {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--paper-card);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 5px 10px;
+}
+
+.leaflet-control-zoom a {
+    color: var(--ink) !important;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Animasi */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive */
+/* ==========================================================================
+   LAYOUT HP / TABLET — Bottom Sheet
+   ========================================================================== */
 @media (max-width: 768px) {
-    body { flex-direction: column-reverse; }
-    #sidebar { width: 100%; height: 45vh; }
-    #map { height: 55vh; }
+    body {
+        flex-direction: column-reverse;
+    }
+
+    #map {
+        height: 100vh;
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+    }
+
+    #sidebar {
+        width: 100%;
+        height: 85vh;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        z-index: 1000;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        box-shadow: var(--shadow-lg);
+        transform: translateY(50vh);
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        background: var(--paper);
+        border-right: none;
+        border-top: 4px solid var(--sma);
+    }
+
+    .drag-handle {
+        display: block;
+        width: 46px;
+        height: 6px;
+        background-color: var(--line-strong);
+        border-radius: 10px;
+        margin: 12px auto 2px auto;
+        flex-shrink: 0;
+    }
+
+    .brand {
+        padding: 12px 22px 14px 22px;
+        border-bottom: none;
+    }
+
+    .brand .eyebrow { margin-bottom: 6px; }
+
+    .brand h1 {
+        font-size: 1.25rem;
+    }
+
+    .brand p {
+        font-size: 0.78rem;
+        margin-top: 4px;
+    }
+
+    .legend {
+        padding: 10px 22px;
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+    }
+
+    .filter-container {
+        padding: 10px 22px 14px 22px;
+    }
+
+    .filter-select {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+
+    .content-panel {
+        padding: 14px 22px 32px 22px;
+    }
+
+    .welcome-text { font-size: 0.85rem; }
+    .welcome-text .lead { font-size: 1.05rem; }
+
+    .welcome-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .detail-card h2 {
+        font-size: 1.25rem;
+        margin-bottom: 14px;
+    }
+
+    .info-group {
+        padding: 12px 14px;
+        margin-bottom: 8px;
+    }
+
+    .info-group p {
+        font-size: 0.85rem;
+    }
+
+    .btn-back {
+        padding: 12px;
+        font-size: 0.85rem;
+        margin-top: 10px;
+    }
 }
