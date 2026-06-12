@@ -151,51 +151,73 @@
         // Inisialisasi awal penayangan data
         tampilkanSemuaMarker(dataSekolah);
 
-        // ==========================================================================
-        // LOGIKA DRAG BOTTOM SHEET UNTUK SENSOR HP
+     // ==========================================================================
+        // PERBAIKAN LOGIKA DRAG BOTTOM SHEET (ANTI-LAG & RESPONSIF DI HP)
         // ==========================================================================
         const sidebar = document.getElementById('sidebar');
         let startY = 0;
         let isDragging = false;
+        
+        // Paksa set posisi awal pas pertama kali dibuka di HP biar JS tidak membaca 'empty string'
+        if (window.innerWidth <= 768) {
+            sidebar.style.transform = 'translateY(50vh)';
+        }
 
         if (window.innerWidth <= 768) {
+            // 1. Sentuhan Dimulai
             sidebar.addEventListener('touchstart', (e) => {
-                // Jangan drag sheet kalau user lagi nge-scroll box detail kontent di dalam
-                if (e.target.closest('.content-panel') && sidebar.style.transform === 'translateY(0px)' && sidebar.querySelector('.content-panel').scrollTop > 0) {
+                // Jika user men-scroll isi konten teks di dalam, jangan jalankan efek seret halaman
+                const contentPanel = sidebar.querySelector('.content-panel');
+                if (e.target.closest('.content-panel') && contentPanel.scrollTop > 0) {
                     return; 
                 }
+                
                 startY = e.touches[0].clientY;
                 isDragging = true;
-                sidebar.style.transition = 'none';
-            });
+                sidebar.style.transition = 'none'; // Matikan transisi biar nempel di jari
+            }, { passive: true });
 
+            // 2. Jari Menyeret
             sidebar.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
                 
                 let currentY = e.touches[0].clientY;
                 let deltaY = currentY - startY;
-                let basePos = (sidebar.style.transform === 'translateY(0px)' || sidebar.style.transform === '') ? 0 : window.innerHeight * 0.5;
+                
+                // Deteksi posisi asli sekarang (apakah lagi di atas [0] atau di bawah [50vh])
+                let currentTransform = sidebar.style.transform;
+                let basePos = currentTransform.includes('50vh') ? window.innerHeight * 0.5 : 0;
+                
                 let newTranslateY = basePos + deltaY;
                 
+                // Batasi seretan: Tidak boleh lewat atas layar (0px) dan tidak boleh amblas kebawah (50vh)
                 if (newTranslateY >= 0 && newTranslateY <= window.innerHeight * 0.5) {
                     sidebar.style.transform = `translateY(${newTranslateY}px)`;
+                    
+                    // Matikan fungsi geser peta Leaflet sementara pas kita lagi seret halaman
+                    map.dragging.disable();
                 }
-            });
+            }, { passive: true });
 
+            // 3. Jari Dilepas
             sidebar.addEventListener('touchend', (e) => {
                 if (!isDragging) return;
                 isDragging = false;
-                sidebar.style.transition = 'transform 0.3s ease-out';
+                
+                // Hidupkan kembali animasi smooth pegas
+                sidebar.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                map.dragging.enable(); // Hidupkan kembali navigasi peta
                 
                 let finalY = e.changedTouches[0].clientY;
                 let distanceDragged = finalY - startY;
                 
-                if (distanceDragged < -40) {
-                    sidebar.style.transform = 'translateY(0px)'; // Menutup full ke atas
-                } else if (distanceDragged > 40) {
-                    sidebar.style.transform = 'translateY(50vh)'; // Kembali turun setengah layar
+                // Toleransi jarak seret diperkecil jadi 30px agar lebih sensitif dan ringan ditarik
+                if (distanceDragged < -30) {
+                    sidebar.style.transform = 'translateY(0px)'; // Mantap naik ke atas penuhin layar
+                } else if (distanceDragged > 30) {
+                    sidebar.style.transform = 'translateY(50vh)'; // Mantap turun setengah layar
                 } else {
-                    // Mental balik jika tarikan tanggung
+                    // Jika tarikan nanggung, balikin ke posisi semula
                     if (startY > window.innerHeight * 0.5) {
                         sidebar.style.transform = 'translateY(50vh)';
                     } else {
@@ -204,6 +226,3 @@
                 }
             });
         }
-    </script>
-</body>
-</html>
